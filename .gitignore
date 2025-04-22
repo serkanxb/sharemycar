@@ -1,4 +1,6 @@
+/build/
+/dist/
+*.spec
+sharemycar.db
 __pycache__/
 *.pyc
-sharemycar.db
-.idea/

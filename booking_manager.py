@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # booking_manager.py
 
-import sqlite3                                  # SQLite library for database operations
-import datetime                                 # For date parsing and arithmetic
-from database import create_connection          # Reuse our DB connection helper
+import sqlite3  # SQLite library for database operations
+import datetime  # For date parsing and arithmetic
+from database import create_connection  # Reuse our DB connection helper
+
 
 class BookingManager:
     """
@@ -36,7 +37,7 @@ class BookingManager:
         :return:                Dict with booking details, including estimated cost.
         :raises ValueError:     If vehicle not found or not available.
         """
-        cursor = self.conn.cursor()               # Prepare SQL execution
+        cursor = self.conn.cursor()  # Prepare SQL execution
 
         # 1) Check vehicle's availability and pricing
         cursor.execute(
@@ -47,7 +48,7 @@ class BookingManager:
             """,
             (vehicle_id,)
         )
-        row = cursor.fetchone()                   # Fetch the result
+        row = cursor.fetchone()  # Fetch the result
         if not row:
             raise ValueError(f"Vehicle '{vehicle_id}' not found.")  # No such vehicle
         is_available, daily_price, maint_cost_per_km = row
@@ -80,7 +81,7 @@ class BookingManager:
                 est_cost
             )
         )
-        booking_id = cursor.lastrowid            # Get the auto-generated booking ID
+        booking_id = cursor.lastrowid  # Get the auto-generated booking ID
 
         # 5) Mark the vehicle as unavailable for the duration
         cursor.execute(
@@ -97,13 +98,13 @@ class BookingManager:
 
         # 7) Return a summary of the created booking
         return {
-            "booking_id":    booking_id,
+            "booking_id": booking_id,
             "customer_name": customer_name,
-            "vehicle_id":    vehicle_id,
-            "start_date":    start_date.isoformat(),
-            "end_date":      end_date.isoformat(),
-            "est_km":        est_km,
-            "est_cost":      est_cost
+            "vehicle_id": vehicle_id,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "est_km": est_km,
+            "est_cost": est_cost
         }
 
     def view_bookings(self):
@@ -112,39 +113,40 @@ class BookingManager:
 
         :return: List of dicts, each representing a booking record.
         """
-        cursor = self.conn.cursor()               # Prepare SQL execution
-        cursor.execute("SELECT * FROM bookings;") # Select all columns
-        rows = cursor.fetchall()                  # Fetch all booking rows
+        cursor = self.conn.cursor()  # Prepare SQL execution
+        cursor.execute("SELECT * FROM bookings;")  # Select all columns
+        rows = cursor.fetchall()  # Fetch all booking rows
 
         # Transform each row into a dict for easy use
         bookings = []
         for row in rows:
             bookings.append({
-                "booking_id":    row[0],  # Auto-incremented booking ID
+                "booking_id": row[0],  # Auto-incremented booking ID
                 "customer_name": row[1],
-                "vehicle_id":    row[2],
-                "start_date":    row[3],
-                "end_date":      row[4],
-                "est_km":        row[5],
-                "est_cost":      row[6]
+                "vehicle_id": row[2],
+                "start_date": row[3],
+                "end_date": row[4],
+                "est_km": row[5],
+                "est_cost": row[6]
             })
         return bookings
 
+
 # Quick manual test when run directly
 if __name__ == "__main__":
-    bm = BookingManager()                       # Initialize BookingManager
+    bm = BookingManager()  # Initialize BookingManager
     print("Existing bookings:")
-    for b in bm.view_bookings():                # List all bookings
+    for b in bm.view_bookings():  # List all bookings
         print(b)
 
     # Example: create a new booking
     try:
         new_booking = bm.create_booking(
-            "Alice Smith",      # Customer name
-            "V002",             # Vehicle ID
-            "2025-04-20",       # Start date
-            5,                  # Rental duration (days)
-            200                 # Estimated kilometers
+            "Alice Smith",  # Customer name
+            "V002",  # Vehicle ID
+            "2025-04-20",  # Start date
+            5,  # Rental duration (days)
+            200  # Estimated kilometers
         )
         print("\nNew booking created:")
         print(new_booking)

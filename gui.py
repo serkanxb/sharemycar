@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # gui.py
 
-import tkinter as tk                      # Core GUI library
-from tkinter import ttk, messagebox                   # Themed widgets (Notebook, Treeview, etc.)
+import tkinter as tk  # Core GUI library
+from tkinter import ttk, messagebox  # Themed widgets (Notebook, Treeview, etc.)
 
 # Import our backend managers
+from database import initialize_database, get_db_path
+
 from vehicle_manager import VehicleManager
 from booking_manager import BookingManager
 from return_manager import ReturnManager
@@ -12,19 +14,25 @@ from maintenance_scheduler import MaintenanceScheduler
 from transaction_manager import TransactionManager
 from financial_manager import FinancialManager
 
+
 class ShareMyCarApp(tk.Tk):
     """
     Main application window for ShareMyCar GUI.
     Creates a tabbed interface and wires up all operations.
     """
+
     def __init__(self):
         """
         Initialize the main window, managers, and all tabs.
         """
-        super().__init__()                   # Initialize parent tk.Tk (with parentheses!)
-                     # Initialize parent tk.Tk
+
+        # Create or open the DB & tables before doing anything else
+        initialize_database(get_db_path())
+
+        super().__init__()  # Initialize parent tk.Tk (with parentheses!)
+        # Initialize parent tk.Tk
         self.title("ShareMyCar Management")  # Window title
-        self.geometry("800x600")             # Default window size
+        self.geometry("800x600")  # Default window size
 
         # Instantiate backend managers
         self.vm = VehicleManager()
@@ -50,7 +58,7 @@ class ShareMyCarApp(tk.Tk):
         """
         Sets up the 'Inventory' tab: view current vehicles + add new ones.
         """
-        frame = ttk.Frame(self.notebook)     # Container for inventory widgets
+        frame = ttk.Frame(self.notebook)  # Container for inventory widgets
         self.notebook.add(frame, text="Inventory")
 
         # --- Vehicle list ---
@@ -105,8 +113,8 @@ class ShareMyCarApp(tk.Tk):
         Clear and reload the inventory Treeview from the database.
         """
         for item in self.inv_tree.get_children():
-            self.inv_tree.delete(item)          # Remove existing rows
-        for v in self.vm.view_inventory():      # Fetch fresh data
+            self.inv_tree.delete(item)  # Remove existing rows
+        for v in self.vm.view_inventory():  # Fetch fresh data
             avail = "Yes" if v["is_available"] else "No"
             self.inv_tree.insert("", "end", values=(
                 v["vehicle_id"],
@@ -198,19 +206,19 @@ class ShareMyCarApp(tk.Tk):
         """
         Handler to create a booking from form data and refresh the list.
         """
-        cust  = self.b_cust.get().strip()
-        vid   = self.b_vid.get().strip()
+        cust = self.b_cust.get().strip()
+        vid = self.b_vid.get().strip()
         start = self.b_start.get().strip()
-        days  = int(self.b_days.get().strip())
-        km    = int(self.b_estkm.get().strip())
+        days = int(self.b_days.get().strip())
+        km = int(self.b_estkm.get().strip())
 
         try:
             b = self.bm.create_booking(cust, vid, start, days, km)  # Backend call
         except Exception as e:
-            tk.messagebox.showerror("Booking Error", str(e))      # Show any error
+            tk.messagebox.showerror("Booking Error", str(e))  # Show any error
             return
-        self._refresh_inventory()      # Vehicle availability may have changed
-        self._refresh_bookings()       # Show new booking
+        self._refresh_inventory()  # Vehicle availability may have changed
+        self._refresh_bookings()  # Show new booking
 
         # Clear booking form
         self.b_cust.delete(0, tk.END)
@@ -247,16 +255,19 @@ class ShareMyCarApp(tk.Tk):
         form = ttk.Frame(frame)
         form.pack(pady=10)
         ttk.Label(form, text="Booking ID").grid(row=0, column=0, sticky="e")
-        self.r_bid = ttk.Entry(form); self.r_bid.grid(row=0, column=1, padx=5)
+        self.r_bid = ttk.Entry(form)
+        self.r_bid.grid(row=0, column=1, padx=5)
         ttk.Label(form, text="Actual km").grid(row=0, column=2, sticky="e")
-        self.r_km = ttk.Entry(form); self.r_km.grid(row=0, column=3, padx=5)
+        self.r_km = ttk.Entry(form)
+        self.r_km.grid(row=0, column=3, padx=5)
         ttk.Label(form, text="Return date").grid(row=1, column=0, sticky="e")
-        self.r_date = ttk.Entry(form); self.r_date.grid(row=1, column=1, padx=5)
-        ttk.Button(form, text="Process Return", command=self._process_return)\
+        self.r_date = ttk.Entry(form)
+        self.r_date.grid(row=1, column=1, padx=5)
+        ttk.Button(form, text="Process Return", command=self._process_return) \
             .grid(row=1, column=3, pady=5)
 
         # Treeview for past returns
-        cols = ("Return ID","Booking ID","km","Late","Clean","Maint","Date")
+        cols = ("Return ID", "Booking ID", "km", "Late", "Clean", "Maint", "Date")
         self.ret_tree = ttk.Treeview(frame, columns=cols, show="headings", height=6)
         for c in cols: self.ret_tree.heading(c, text=c)
         self.ret_tree.pack(fill="x", padx=10, pady=10)
@@ -267,7 +278,7 @@ class ShareMyCarApp(tk.Tk):
         Handler to process a return and refresh inventory/bookings/returns.
         """
         bid = int(self.r_bid.get().strip())
-        km  = int(self.r_km.get().strip())
+        km = int(self.r_km.get().strip())
         date = self.r_date.get().strip()
         try:
             self.rm.process_return(bid, km, date)  # Backend call
@@ -286,11 +297,10 @@ class ShareMyCarApp(tk.Tk):
         self._refresh_transactions()
         self._refresh_financial_report()
 
-          # Formu temizle
+        # Formu temizle
         self.r_bid.delete(0, tk.END)
         self.r_km.delete(0, tk.END)
         self.r_date.delete(0, tk.END)
-
 
     def _refresh_returns(self):
         """
@@ -317,10 +327,10 @@ class ShareMyCarApp(tk.Tk):
         self.notebook.add(frame, text="Maintenance")
 
         # Button to run scheduling
-        ttk.Button(frame, text="Check & Schedule", command=self._schedule_maint)\
+        ttk.Button(frame, text="Check & Schedule", command=self._schedule_maint) \
             .pack(pady=10)
         # Treeview for maintenance log
-        cols = ("ID","Vehicle","Mileage","Cost","Date")
+        cols = ("ID", "Vehicle", "Mileage", "Cost", "Date")
         self.maint_tree = ttk.Treeview(frame, columns=cols, show="headings", height=6)
         for c in cols: self.maint_tree.heading(c, text=c)
         self.maint_tree.pack(fill="x", padx=10, pady=10)
@@ -356,7 +366,7 @@ class ShareMyCarApp(tk.Tk):
         frame = ttk.Frame(self.notebook)
         self.notebook.add(frame, text="Transactions")
 
-        cols = ("ID","Customer","Vehicle","Days","Rev","Clean","Maint","Late","Date")
+        cols = ("ID", "Customer", "Vehicle", "Days", "Rev", "Clean", "Maint", "Late", "Date")
         self.tx_tree = ttk.Treeview(frame, columns=cols, show="headings", height=8)
         for c in cols: self.tx_tree.heading(c, text=c)
         self.tx_tree.pack(fill="both", expand=True, padx=10, pady=10)
@@ -413,5 +423,5 @@ class ShareMyCarApp(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = ShareMyCarApp()    # Instantiate the GUI application
-    app.mainloop()           # Enter the Tk event loop
+    app = ShareMyCarApp()  # Instantiate the GUI application
+    app.mainloop()  # Enter the Tk event loop
